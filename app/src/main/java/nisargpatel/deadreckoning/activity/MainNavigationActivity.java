@@ -139,7 +139,15 @@ public class MainNavigationActivity extends AppCompatActivity implements SensorE
                         currentPosition = pathPoints.get(pathPoints.size() - 1);
                         
                         if (pathOverlay != null) {
-                            pathOverlay.setPoints(pathPoints);
+                            if (mapView != null && nisargpatel.deadreckoning.view.AltitudeTrack.hasAltitudeVariation(pathPoints)) {
+                                nisargpatel.deadreckoning.view.AltitudeTrack track =
+                                        new nisargpatel.deadreckoning.view.AltitudeTrack(mapView, pathOverlay, 10.0f);
+                                track.setPoints(pathPoints);
+                                pathOverlay.setPoints(new ArrayList<>());
+                                Toast.makeText(this, "Height (blue→red): " + track.getRangeText(), Toast.LENGTH_LONG).show();
+                            } else {
+                                pathOverlay.setPoints(pathPoints);
+                            }
                         }
                         
                         if (textSteps != null) {

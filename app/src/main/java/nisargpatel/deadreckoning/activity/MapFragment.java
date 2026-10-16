@@ -53,6 +53,7 @@ import org.osmdroid.views.overlay.gestures.RotationGestureOverlay;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import nisargpatel.deadreckoning.R;
 import nisargpatel.deadreckoning.model.Marker;
@@ -79,6 +80,8 @@ public class MapFragment extends Fragment implements SensorEventListener {
     private Sensor sensorMagnetic;
     private Sensor sensorGyroscope;
     private Sensor sensorLinearAcceleration;
+    private Sensor sensorPressure;
+    private nisargpatel.deadreckoning.view.AltitudeTrack altitudeTrack;
 
     private DeadReckoningEngine deadReckoningEngine;
     private PreciseHeadingEstimator headingEstimator;
@@ -288,12 +291,15 @@ public class MapFragment extends Fragment implements SensorEventListener {
             }
             
             if (deadReckoningEngine != null) {
+                deadReckoningEngine.setCompassFollow(!isManualMode);
                 lastDeadReckoningDistance = deadReckoningEngine.getDistance();
                 noGPSFixedHeading = deadReckoningEngine.getHeading();
                 deadReckoningEngine.setFixedHeading(noGPSFixedHeading);
             }
             
-            Toast.makeText(requireContext(), "Mode: No GPS - Straight line, use arrows to turn", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), isManualMode
+                    ? "No GPS: manual - use arrows/dial to turn"
+                    : "No GPS: compass - turns are tracked automatically", Toast.LENGTH_SHORT).show();
         } else {
             buttonNoGPS.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.transparent));
             buttonNoGPS.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary));
@@ -358,6 +364,9 @@ public class MapFragment extends Fragment implements SensorEventListener {
     private void toggleTurnMode() {
         turnModePrefs.toggleTurnMode();
         isManualMode = turnModePrefs.getTurnMode() == TurnModePreferences.TurnMode.MANUAL;
+        if (deadReckoningEngine != null) {
+            deadReckoningEngine.setCompassFollow(!isManualMode);
+        }
         updateTurnModeUI();
         
         String mode = isManualMode ? "Manual" : "Auto";
@@ -411,9 +420,13 @@ public class MapFragment extends Fragment implements SensorEventListener {
         sensorMagnetic = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         sensorGyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         sensorLinearAcceleration = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+        sensorPressure = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
     }
 
     private void registerSensors() {
+        if (sensorPressure != null) {
+            sensorManager.registerListener(this, sensorPressure, SensorManager.SENSOR_DELAY_UI);
+        }
         if (sensorGravity != null) {
             sensorManager.registerListener(this, sensorGravity, SensorManager.SENSOR_DELAY_GAME);
         }
@@ -485,6 +498,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
         noGPSPathOverlay.getOutlinePaint().setStrokeWidth(12.0f);
         noGPSPathOverlay.getOutlinePaint().setStrokeCap(Paint.Cap.ROUND);
         mapView.getOverlays().add(noGPSPathOverlay);
+        altitudeTrack = new nisargpatel.deadreckoning.view.AltitudeTrack(mapView, noGPSPathOverlay, 12.0f);
 
         MapEventsReceiver mReceive = new MapEventsReceiver() {
             @Override
@@ -521,7 +535,13 @@ public class MapFragment extends Fragment implements SensorEventListener {
         if (!pathPoints.isEmpty()) {
             pathOverlay.setPoints(pathPoints);
         }
-        if (!noGPSPathPoints.isEmpty()) {
+        boolean colourByAltitude = altitudeTrack != null
+                && deadReckoningEngine != null && deadReckoningEngine.hasAltitude();
+        if (colourByAltitude) {
+            noGPSPathOverlay.setPoints(new ArrayList<>());
+            altitudeTrack.setPoints(noGPSPathPoints);
+        } else {
+            if (altitudeTrack != null) altitudeTrack.clear();
             noGPSPathOverlay.setPoints(noGPSPathPoints);
         }
         mapView.invalidate();
@@ -529,6 +549,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
 
     private void initEngine() {
         deadReckoningEngine = new DeadReckoningEngine();
+        deadReckoningEngine.setCompassFollow(!isManualMode);
         headingEstimator = new PreciseHeadingEstimator();
         tripStorage = new TripStorage(requireContext());
     }
@@ -688,6 +709,11 @@ public class MapFragment extends Fragment implements SensorEventListener {
         float[] values = event.values.clone();
 
         switch (event.sensor.getType()) {
+            case Sensor.TYPE_PRESSURE:
+                if (deadReckoningEngine != null) {
+                    deadReckoningEngine.updatePressure(values[0]);
+                }
+                break;
             case Sensor.TYPE_GRAVITY:
                 headingEstimator.updateGravity(values);
                 break;
@@ -714,7 +740,12 @@ public class MapFragment extends Fragment implements SensorEventListener {
         
         getActivity().runOnUiThread(() -> {
             textSteps.setText(String.valueOf(deadReckoningEngine.getStepCount()));
-            textDistance.setText(String.format("%.2f m", deadReckoningEngine.getDistance()));
+            if (deadReckoningEngine.hasAltitude()) {
+                textDistance.setText(String.format(Locale.US, "%.1f m  ↕%+.1f m",
+                        deadReckoningEngine.getDistance(), deadReckoningEngine.getRelativeAltitude()));
+            } else {
+                textDistance.setText(String.format("%.2f m", deadReckoningEngine.getDistance()));
+            }
             double heading = deadReckoningEngine.getHeading();
             textHeading.setText(String.format("%.1f°", heading));
 
@@ -738,6 +769,10 @@ public class MapFragment extends Fragment implements SensorEventListener {
                 }
             }
 
+            if (forceNoGPSMode && !isManualMode) {
+                noGPSFixedHeading = heading;
+            }
+
             if (isPaused) return;
 
             if (isTracking && forceNoGPSMode && lastDeadReckoningPoint != null) {
@@ -753,6 +788,9 @@ public class MapFragment extends Fragment implements SensorEventListener {
                     );
 
                     if (newPoint != null) {
+                        if (deadReckoningEngine.hasAltitude()) {
+                            newPoint.setAltitude(deadReckoningEngine.getRelativeAltitude());
+                        }
                         noGPSPathPoints.add(newPoint);
                         lastDeadReckoningPoint = newPoint;
                         currentPosition = newPoint;
@@ -823,6 +861,9 @@ public class MapFragment extends Fragment implements SensorEventListener {
         startLocationUpdates();
         
         isManualMode = turnModePrefs.getTurnMode() == TurnModePreferences.TurnMode.MANUAL;
+        if (deadReckoningEngine != null) {
+            deadReckoningEngine.setCompassFollow(!isManualMode);
+        }
         updateTurnModeUI();
         
         try {

@@ -1,5 +1,6 @@
 package nisargpatel.deadreckoning.sensor;
 
+import android.hardware.SensorManager;
 import android.location.Location;
 
 import org.osmdroid.util.GeoPoint;
@@ -66,6 +67,8 @@ public class DeadReckoningEngine {
         currentTrip = new Trip();
         turnEvents.clear();
         useManualHeading = false;
+        headingOffset = 0;
+        referencePressure = filteredPressure; // altitude 0 = where tracking started
         
         currentX = 0;
         currentY = 0;
@@ -107,6 +110,7 @@ public class DeadReckoningEngine {
         accumulatedHeadingChange = 0;
         stepsSinceLastTurn = 0;
         isTurning = false;
+        referencePressure = Float.NaN;
         
         startLocation = null;
         lastGPSLocation = null;
@@ -128,7 +132,7 @@ public class DeadReckoningEngine {
         if (gravity != null && magnetic != null) {
             previousHeading = currentHeading;
             if (!useManualHeading) {
-                currentHeading = headingEstimator.getHeadingDegrees();
+                currentHeading = normalize360(headingEstimator.getHeadingDegrees() + headingOffset);
             }
             detectTurn();
         }
@@ -242,6 +246,9 @@ public class DeadReckoningEngine {
         if (currentTrip != null) {
             GeoPoint point = calculateGeoPoint(currentX, currentY);
             if (point != null) {
+                if (hasAltitude()) {
+                    point.setAltitude(getRelativeAltitude());
+                }
                 currentTrip.addPoint(point);
             }
         }
@@ -270,7 +277,11 @@ public class DeadReckoningEngine {
             lastGPSLocation = location;
             
             if (currentTrip != null) {
-                currentTrip.addPoint(new GeoPoint(location.getLatitude(), location.getLongitude()));
+                GeoPoint startPoint = new GeoPoint(location.getLatitude(), location.getLongitude());
+                if (hasAltitude()) {
+                    startPoint.setAltitude(getRelativeAltitude());
+                }
+                currentTrip.addPoint(startPoint);
             }
             return;
         }
@@ -391,6 +402,12 @@ public class DeadReckoningEngine {
     public void turnLeft() {
         if (!isRunning) return;
         
+        if (compassFollow) {
+            setFixedHeading(getHeading() + (-MANUAL_TURN_ANGLE));
+            addManualTurnEvent(TurnEvent.TurnType.LEFT, -MANUAL_TURN_ANGLE);
+            return;
+        }
+
         useManualHeading = true;
         currentHeading -= MANUAL_TURN_ANGLE;
         
@@ -404,6 +421,12 @@ public class DeadReckoningEngine {
     public void turnRight() {
         if (!isRunning) return;
         
+        if (compassFollow) {
+            setFixedHeading(getHeading() + (MANUAL_TURN_ANGLE));
+            addManualTurnEvent(TurnEvent.TurnType.RIGHT, MANUAL_TURN_ANGLE);
+            return;
+        }
+
         useManualHeading = true;
         currentHeading += MANUAL_TURN_ANGLE;
         
@@ -417,6 +440,12 @@ public class DeadReckoningEngine {
     public void turnAround() {
         if (!isRunning) return;
         
+        if (compassFollow) {
+            setFixedHeading(getHeading() + 180);
+            addManualTurnEvent(TurnEvent.TurnType.UTURN, 180);
+            return;
+        }
+
         useManualHeading = true;
         currentHeading += 180;
         
@@ -444,7 +473,64 @@ public class DeadReckoningEngine {
         }
     }
     
+    // Barometric altimeter: altitude relative to the point where tracking started.
+    private static final float PRESSURE_SMOOTHING = 0.1f;
+    private float filteredPressure = Float.NaN;
+    private float referencePressure = Float.NaN;
+
+    public void updatePressure(float hPa) {
+        if (hPa <= 0) return;
+        if (Float.isNaN(filteredPressure)) {
+            filteredPressure = hPa;
+        } else {
+            filteredPressure += PRESSURE_SMOOTHING * (hPa - filteredPressure);
+        }
+        if (isRunning && Float.isNaN(referencePressure)) {
+            referencePressure = filteredPressure;
+        }
+    }
+
+    public boolean hasAltitude() {
+        return !Float.isNaN(referencePressure) && !Float.isNaN(filteredPressure);
+    }
+
+    /** Metres above (+) or below (-) the start point. */
+    public double getRelativeAltitude() {
+        if (!hasAltitude()) return 0.0;
+        return SensorManager.getAltitude(referencePressure, filteredPressure);
+    }
+
+    // Compass-follow mode: heading keeps tracking the compass/gyro.
+    // setFixedHeading() and the turn buttons only shift a correction offset.
+    private boolean compassFollow = true;
+    private double headingOffset = 0;
+
+    public void setCompassFollow(boolean follow) {
+        compassFollow = follow;
+        if (follow) {
+            useManualHeading = false;
+        }
+    }
+
+    public boolean isCompassFollow() {
+        return compassFollow;
+    }
+
+    private static double normalize360(double deg) {
+        double d = deg % 360.0;
+        if (d < 0) d += 360.0;
+        return d;
+    }
+
     public void setFixedHeading(double heading) {
+        if (compassFollow) {
+            double delta = heading - getHeading();
+            headingOffset = normalize360(headingOffset + delta);
+            currentHeading = normalize360(currentHeading + delta);
+            previousHeading = currentHeading;
+            useManualHeading = false;
+            return;
+        }
         currentHeading = heading;
         useManualHeading = true;
     }
