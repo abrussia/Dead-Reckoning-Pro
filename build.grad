@@ -1,0 +1,44 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'nisargpatel.deadreckoning'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'nisargpatel.deadreckoning'
+        minSdk 22
+        targetSdk 34
+        versionCode 2
+        versionName '2.0'
+        multiDexEnabled true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.core:core:1.12.0'
+    implementation 'androidx.activity:activity:1.8.2'
+    implementation 'androidx.fragment:fragment:1.6.2'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'com.google.android.gms:play-services-location:21.0.1'
+    implementation 'org.osmdroid:osmdroid-android:6.1.18'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'com.googlecode.efficient-java-matrix-library:ejml:0.24'
+}
