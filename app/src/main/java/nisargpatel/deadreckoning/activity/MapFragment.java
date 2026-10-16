@@ -82,9 +82,11 @@ public class MapFragment extends Fragment implements SensorEventListener {
     private Sensor sensorLinearAcceleration;
     private Sensor sensorPressure;
     private Sensor sensorRotationVector;
+    private Sensor sensorGameRotationVector;
     private Sensor sensorStepDetector;
     private boolean wasHandlingPhone = false;
     private nisargpatel.deadreckoning.view.AltitudeTrack altitudeTrack;
+    private nisargpatel.deadreckoning.view.ElevationProfileView elevationProfile;
 
     private DeadReckoningEngine deadReckoningEngine;
     private PreciseHeadingEstimator headingEstimator;
@@ -172,6 +174,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
         textSteps = view.findViewById(R.id.textSteps);
         textDistance = view.findViewById(R.id.textDistance);
         textHeading = view.findViewById(R.id.textHeading);
+        elevationProfile = view.findViewById(R.id.elevationProfile);
         textGPSAccuracy = view.findViewById(R.id.textGPSAccuracy);
         textGPSStatus = view.findViewById(R.id.textGPSStatus);
         textTurnIndicator = view.findViewById(R.id.textTurnIndicator);
@@ -462,6 +465,10 @@ public class MapFragment extends Fragment implements SensorEventListener {
         sensorLinearAcceleration = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
         sensorPressure = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
         sensorRotationVector = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+        sensorGameRotationVector = sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR);
+        if (sensorRotationVector == null) {
+            sensorGameRotationVector = null; // without a north reference fall back to one sensor
+        }
         sensorStepDetector = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
     }
 
@@ -471,6 +478,9 @@ public class MapFragment extends Fragment implements SensorEventListener {
         }
         if (sensorRotationVector != null) {
             sensorManager.registerListener(this, sensorRotationVector, SensorManager.SENSOR_DELAY_GAME);
+        }
+        if (sensorGameRotationVector != null) {
+            sensorManager.registerListener(this, sensorGameRotationVector, SensorManager.SENSOR_DELAY_GAME);
         }
         if (sensorStepDetector != null) {
             sensorManager.registerListener(this, sensorStepDetector, SensorManager.SENSOR_DELAY_FASTEST);
@@ -640,8 +650,10 @@ public class MapFragment extends Fragment implements SensorEventListener {
         if (colourByAltitude) {
             noGPSPathOverlay.setPoints(new ArrayList<>());
             altitudeTrack.setPoints(noGPSPathPoints);
+            if (elevationProfile != null) elevationProfile.setPoints(noGPSPathPoints);
         } else {
             if (altitudeTrack != null) altitudeTrack.clear();
+            if (elevationProfile != null) elevationProfile.clear();
             noGPSPathOverlay.setPoints(noGPSPathPoints);
         }
         mapView.invalidate();
@@ -819,9 +831,20 @@ public class MapFragment extends Fragment implements SensorEventListener {
                     updateUI();
                 }
                 break;
-            case Sensor.TYPE_ROTATION_VECTOR:
+            case Sensor.TYPE_GAME_ROTATION_VECTOR:
+                // gyro + accelerometer only: smooth turns, not affected by steel or rails
                 if (deadReckoningEngine != null) {
                     deadReckoningEngine.updateRotationVector(values, event.timestamp);
+                }
+                break;
+            case Sensor.TYPE_ROTATION_VECTOR:
+                if (deadReckoningEngine != null) {
+                    if (sensorGameRotationVector != null) {
+                        // used only to find magnetic north at the start
+                        deadReckoningEngine.updateMagneticRotationVector(values, event.timestamp);
+                    } else {
+                        deadReckoningEngine.updateRotationVector(values, event.timestamp);
+                    }
                 }
                 break;
             case Sensor.TYPE_PRESSURE:
@@ -893,7 +916,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
             }
 
             if (forceNoGPSMode && !isManualMode) {
-                noGPSFixedHeading = heading;
+                noGPSFixedHeading = deadReckoningEngine.getStepHeading();
             }
 
             if (isPaused) return;

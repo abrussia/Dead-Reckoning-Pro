@@ -70,6 +70,8 @@ public class DeadReckoningEngine {
         headingOffset = 0;
         hardwareSteps = false;
         hardwareStepCount = 0;
+        runStartT = -1;
+        headingCount = 0;
         referencePressure = filteredPressure; // altitude 0 = where tracking started
         
         currentX = 0;
@@ -239,7 +241,11 @@ public class DeadReckoningEngine {
     
     private void updatePosition() {
         double strideLength = stepCounter.getStrideLength();
-        double correctedHeading = gpsCalibrator.correctHeading(currentHeading);
+        // Heading for this step: smoothed over the last ~1.2 s so the sway of the
+        // phone during each stride (strong in a pocket) does not zig-zag the track.
+        double correctedHeading = (useOrientationTracker && !useManualHeading)
+                ? getStepHeading()
+                : currentHeading;
         double headingRadians = Math.toRadians(correctedHeading);
         
         double deltaX = strideLength * Math.sin(headingRadians);
@@ -292,15 +298,13 @@ public class DeadReckoningEngine {
             return;
         }
         
-        gpsCalibrator.addCalibrationPoint(
-            location,
-            currentX,
-            currentY
-        );
-        
-        double[] corrected = gpsCalibrator.correctPosition(currentX, currentY, currentHeading);
-        currentX = corrected[0];
-        currentY = corrected[1];
+        // With a good GPS fix the position simply follows GPS. (The old calibrator rescaled
+        // the whole position on every fix and learned a heading bias from noisy 1-second GPS
+        // bearings, which distorted and rotated the track - it is no longer applied.)
+        double lat0 = Math.toRadians(startLocation.getLatitude());
+        double earthRadius = 6371000;
+        currentY = Math.toRadians(location.getLatitude() - startLocation.getLatitude()) * earthRadius;
+        currentX = Math.toRadians(location.getLongitude() - startLocation.getLongitude()) * earthRadius * Math.cos(lat0);
         
         lastGPSLocation = location;
     }
@@ -314,7 +318,44 @@ public class DeadReckoningEngine {
     }
     
     public double getHeading() {
-        return gpsCalibrator.correctHeading(currentHeading);
+        return currentHeading;
+    }
+
+    // Recent headings for step smoothing (circular mean).
+    private static final int HEADING_HIST = 128;
+    private static final long STEP_HEADING_WINDOW_NS = 1_200_000_000L;
+    private final long[] headingT = new long[HEADING_HIST];
+    private final double[] headingSin = new double[HEADING_HIST];
+    private final double[] headingCos = new double[HEADING_HIST];
+    private int headingPos = 0;
+    private int headingCount = 0;
+    private long lastHeadingT = 0;
+
+    private void recordHeading(long t, double deg) {
+        double r = Math.toRadians(deg);
+        headingT[headingPos] = t;
+        headingSin[headingPos] = Math.sin(r);
+        headingCos[headingPos] = Math.cos(r);
+        headingPos = (headingPos + 1) % HEADING_HIST;
+        if (headingCount < HEADING_HIST) headingCount++;
+        lastHeadingT = t;
+    }
+
+    /** Walking direction for the current step: circular mean of the last ~1.2 s. */
+    public double getStepHeading() {
+        if (headingCount == 0) return currentHeading;
+        double sx = 0;
+        double cx = 0;
+        int used = 0;
+        for (int i = 0; i < headingCount; i++) {
+            if (lastHeadingT - headingT[i] <= STEP_HEADING_WINDOW_NS) {
+                sx += headingSin[i];
+                cx += headingCos[i];
+                used++;
+            }
+        }
+        if (used == 0 || (Math.abs(sx) < 1e-9 && Math.abs(cx) < 1e-9)) return currentHeading;
+        return normalize360(Math.toDegrees(Math.atan2(sx, cx)));
     }
     
     public int getStepCount() {
@@ -507,8 +548,26 @@ public class DeadReckoningEngine {
         if (isRunning && !useManualHeading) {
             previousHeading = currentHeading;
             currentHeading = normalize360(orientationTracker.getHeading() + headingOffset);
+            if (!orientationTracker.isHandling()) {
+                recordHeading(timestamp, currentHeading);
+            }
             detectTurn();
         }
+        if (isRunning && runStartT < 0) {
+            runStartT = timestamp;
+        }
+    }
+
+    // North alignment: the gyro-based game rotation vector gives smooth, magnet-immune turns,
+    // the magnetic rotation vector gives true north. North is taken from the magnetometer only
+    // before tracking and during the first seconds of it, then frozen, so steel, rails and
+    // buildings can no longer bend the track.
+    private static final long NORTH_ALIGN_NS = 5_000_000_000L;
+    private long runStartT = -1;
+
+    public void updateMagneticRotationVector(float[] values, long timestamp) {
+        boolean allow = !isRunning || runStartT < 0 || timestamp - runStartT < NORTH_ALIGN_NS;
+        orientationTracker.updateNorthReference(values, allow);
     }
 
     /** True while the phone is being moved to a new carry position (steps are ignored). */

@@ -33,6 +33,13 @@ public class OrientationTracker {
     private static final int HISTORY = 128;
 
     private final float[] rotation = new float[9];
+    private final float[] magRotation = new float[9];
+
+    // Offset from the (gyro-based) rotation frame to magnetic north.
+    private double northOffset = 0;
+    private double northSin = 0;
+    private double northCos = 1;
+    private boolean northInit = false;
 
     private boolean hasData = false;
     private boolean useBackAxis = false;  // false: device Y axis (top); true: device -Z axis (back)
@@ -94,12 +101,7 @@ public class OrientationTracker {
     }
 
     public void update(float[] rotationVector, long timestamp) {
-        float[] rv = rotationVector;
-        if (rv.length > 4) {
-            // Some devices send 5 values; getRotationMatrixFromVector can choke on them.
-            rv = new float[]{rotationVector[0], rotationVector[1], rotationVector[2], rotationVector[3]};
-        }
-        SensorManager.getRotationMatrixFromVector(rotation, rv);
+        SensorManager.getRotationMatrixFromVector(rotation, trim(rotationVector));
 
         // World "up" in device coordinates is the third row of the matrix.
         double[] up = {rotation[6], rotation[7], rotation[8]};
@@ -136,7 +138,7 @@ public class OrientationTracker {
             } else {
                 deviationSince = -1;
             }
-            heading = normalize(rawAzimuth() + carryOffset);
+            heading = normalize(rawAzimuth() + carryOffset + northOffset);
             pushHistory(timestamp, heading);
         } else {
             // Holding the heading until the phone settles in its new position.
@@ -171,30 +173,67 @@ public class OrientationTracker {
         double raw = rawAzimuth();
         if (Double.isNaN(targetHeading)) {
             carryOffset = 0;
-            heading = normalize(raw);
+            heading = normalize(raw + northOffset);
         } else {
-            carryOffset = normalize(targetHeading - raw);
+            carryOffset = normalize(targetHeading - raw - northOffset);
             heading = normalize(targetHeading);
         }
     }
 
     /** Azimuth of the chosen device axis projected onto the horizontal plane. */
     private double rawAzimuth() {
+        double a = axisAzimuth(rotation, useBackAxis);
+        return Double.isNaN(a) ? heading - carryOffset - northOffset : a;
+    }
+
+    private static double axisAzimuth(float[] r, boolean back) {
         double east;
         double north;
-        if (useBackAxis) {
+        if (back) {
             // Back of the phone = -Z axis (column 2, negated).
-            east = -rotation[2];
-            north = -rotation[5];
+            east = -r[2];
+            north = -r[5];
         } else {
             // Top of the phone = +Y axis (column 1).
-            east = rotation[1];
-            north = rotation[4];
+            east = r[1];
+            north = r[4];
         }
         if (Math.abs(east) < 1e-6 && Math.abs(north) < 1e-6) {
-            return heading - carryOffset;
+            return Double.NaN;
         }
         return Math.toDegrees(Math.atan2(east, north));
+    }
+
+    /**
+     * Magnetic rotation vector (TYPE_ROTATION_VECTOR) sample. While {@code allow} is true it
+     * slowly aligns the gyro-based frame to magnetic north; otherwise it is ignored.
+     */
+    public void updateNorthReference(float[] magneticRotationVector, boolean allow) {
+        if (!allow || !hasData || handling) return;
+        SensorManager.getRotationMatrixFromVector(magRotation, trim(magneticRotationVector));
+        double magAz = axisAzimuth(magRotation, useBackAxis);
+        double gyroAz = axisAzimuth(rotation, useBackAxis);
+        if (Double.isNaN(magAz) || Double.isNaN(gyroAz)) return;
+        double d = Math.toRadians(magAz - gyroAz);
+        if (!northInit) {
+            northSin = Math.sin(d);
+            northCos = Math.cos(d);
+            northInit = true;
+        } else {
+            northSin += 0.05 * (Math.sin(d) - northSin);
+            northCos += 0.05 * (Math.cos(d) - northCos);
+        }
+        double newOffset = Math.toDegrees(Math.atan2(northSin, northCos));
+        heading = normalize(heading + (newOffset - northOffset));
+        northOffset = newOffset;
+    }
+
+    private static float[] trim(float[] rv) {
+        if (rv.length > 4) {
+            // Some devices send 5 values; getRotationMatrixFromVector can choke on them.
+            return new float[]{rv[0], rv[1], rv[2], rv[3]};
+        }
+        return rv;
     }
 
     private void updateAverage(double[] up) {
