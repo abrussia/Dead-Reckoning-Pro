@@ -242,4 +242,46 @@
     <string name="recording_channel">Track recording</string>
     <string name="recording_title">Recording track</string>
     <string name="recording_text">Steps and direction are recorded, also with the screen off</string>
+    <string name="ind_left">Left ↰</string>
+    <string name="ind_right">Right ↱</string>
+    <string name="ind_uturn">U-Turn 🔄</string>
+    <string name="toast_paused">Tracking paused</string>
+    <string name="toast_resumed">Tracking resumed</string>
+    <string name="toast_no_fix">No GPS fix: track starts at the map centre</string>
+    <string name="toast_gps_mode">Mode: GPS</string>
+    <string name="toast_mode_manual">Turns: manual</string>
+    <string name="toast_mode_auto">Turns: automatic (compass)</string>
+    <string name="btn_mode_manual">Turns: manual</string>
+    <string name="btn_mode_auto">Turns: auto</string>
+    <string name="btn_no_gps">No GPS</string>
+    <string name="gps_status_calibrating">GPS: calibrating…</string>
+    <string name="gps_status_off">GPS: OFF</string>
+    <string name="gps_status_none">No GPS</string>
+    <string name="gps_status_ok">GPS: OK</string>
+    <string name="gps_status_fair">GPS: fair</string>
+    <string name="gps_status_low">GPS: low</string>
+    <string name="toast_gps_perm">GPS permission required</string>
+    <string name="toast_started">Tracking started</string>
+    <string name="toast_saved">Trip saved</string>
+    <string name="toast_stopped">Tracking stopped</string>
+    <string name="toast_nogps_manual">No GPS: manual turns - use the arrows or the dial</string>
+    <string name="toast_nogps_auto">No GPS: turns are tracked automatically</string>
+    <string name="ind_phone_moved">📱 Phone moved: holding direction</string>
+    <string name="ind_phone_settled">📱 Direction kept, recording</string>
+    <string name="ind_turn_left_deg">Left %.0f°</string>
+    <string name="ind_turn_right_deg">Right %.0f°</string>
+    <string name="profile_height" formatted="true">Height %+.1f m</string>
+    <string name="profile_range" formatted="true">min %+.1f   max %+.1f</string>
+    <string name="profile_walked" formatted="true">%.0f m walked</string>
+    <string name="profile_axis" formatted="true">%+.0f m</string>
+    <string name="v3d_info" formatted="true">Height %+.1f … %+.1f m   grid %s m   height ×%s</string>
+    <string name="v3d_hint" formatted="true">drag: rotate/tilt · pinch: zoom · 2 fingers: move · double tap: reset</string>
+    <string name="v3d_empty" formatted="true">No points in this track</string>
+    <string name="v3d_btn_height" formatted="true">Height ×%.0f</string>
+    <string name="v3d_btn_top" formatted="true">Top</string>
+    <string name="v3d_btn_side" formatted="true">Side</string>
+    <string name="v3d_btn_reset" formatted="true">Reset</string>
+    <string name="v3d_no_points" formatted="true">This trip has no track points</string>
+    <string name="btn_3d" formatted="true">3D</string>
+    <string name="live_distance_height" formatted="true">%.1f m  ↕%+.1f m</string>
 </resources>

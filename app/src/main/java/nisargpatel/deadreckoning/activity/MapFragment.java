@@ -223,7 +223,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
             if (deadReckoningEngine != null && isTracking && forceNoGPSMode) {
                 deadReckoningEngine.turnLeft();
                 noGPSFixedHeading = deadReckoningEngine.getHeading();
-                showTurnIndicator("Left ↰");
+                showTurnIndicator(getString(R.string.ind_left));
             }
         });
         
@@ -231,7 +231,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
             if (deadReckoningEngine != null && isTracking && forceNoGPSMode) {
                 deadReckoningEngine.turnRight();
                 noGPSFixedHeading = deadReckoningEngine.getHeading();
-                showTurnIndicator("Right ↱");
+                showTurnIndicator(getString(R.string.ind_right));
             }
         });
         
@@ -239,7 +239,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
             if (deadReckoningEngine != null && isTracking && forceNoGPSMode) {
                 deadReckoningEngine.turnAround();
                 noGPSFixedHeading = deadReckoningEngine.getHeading();
-                showTurnIndicator("U-Turn 🔄");
+                showTurnIndicator(getString(R.string.ind_uturn));
             }
         });
 
@@ -272,7 +272,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
         if (isPaused) {
             buttonPause.setText(R.string.resume);
             buttonPause.setIconResource(R.drawable.ic_play);
-            Toast.makeText(requireContext(), "Tracking paused", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.toast_paused), Toast.LENGTH_SHORT).show();
         } else {
             // The phone may have been moved while paused: keep the walking direction from before.
             if (deadReckoningEngine != null) {
@@ -280,7 +280,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
             }
             buttonPause.setText(R.string.pause);
             buttonPause.setIconResource(R.drawable.ic_pause);
-            Toast.makeText(requireContext(), "Tracking resumed", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.toast_resumed), Toast.LENGTH_SHORT).show();
         }
     }
     
@@ -306,7 +306,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
                 org.osmdroid.api.IGeoPoint centre = mapView.getMapCenter();
                 lastDeadReckoningPoint = new GeoPoint(centre.getLatitude(), centre.getLongitude());
                 currentPosition = lastDeadReckoningPoint;
-                Toast.makeText(requireContext(), "No GPS fix: track starts at the map centre", Toast.LENGTH_LONG).show();
+                Toast.makeText(requireContext(), getString(R.string.toast_no_fix), Toast.LENGTH_LONG).show();
             }
 
             if (lastDeadReckoningPoint != null) {
@@ -335,8 +335,8 @@ public class MapFragment extends Fragment implements SensorEventListener {
             }
             
             Toast.makeText(requireContext(), isManualMode
-                    ? "No GPS: manual - use arrows/dial to turn"
-                    : "No GPS: compass - turns are tracked automatically", Toast.LENGTH_SHORT).show();
+                    ? getString(R.string.toast_nogps_manual)
+                    : getString(R.string.toast_nogps_auto), Toast.LENGTH_SHORT).show();
         } else {
             buttonNoGPS.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.transparent));
             buttonNoGPS.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary));
@@ -347,7 +347,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
                 deadReckoningEngine.resetToCompassHeading();
             }
             setGpsActive(true);
-            Toast.makeText(requireContext(), "Mode: GPS (Compass)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.toast_gps_mode), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -413,26 +413,26 @@ public class MapFragment extends Fragment implements SensorEventListener {
         }
         updateTurnModeUI();
         
-        String mode = isManualMode ? "Manual" : "Auto";
-        Toast.makeText(requireContext(), "Mode: " + mode, Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), isManualMode ? R.string.toast_mode_manual : R.string.toast_mode_auto,
+                Toast.LENGTH_SHORT).show();
     }
 
     private void calibrateGPS() {
         if (deadReckoningEngine != null) {
             deadReckoningEngine.resetCalibration();
             Toast.makeText(requireContext(), R.string.gps_reset, Toast.LENGTH_LONG).show();
-            textGPSStatus.setText("GPS: Calibrating...");
+            textGPSStatus.setText(getString(R.string.gps_status_calibrating));
         }
     }
 
     private void updateTurnModeUI() {
         if (isManualMode) {
-            buttonModeToggle.setText("Mode: Manual");
+            buttonModeToggle.setText(R.string.btn_mode_manual);
             if (isTracking) {
                 manualTurnControls.setVisibility(View.VISIBLE);
             }
         } else {
-            buttonModeToggle.setText("Mode: Auto");
+            buttonModeToggle.setText(R.string.btn_mode_auto);
         manualTurnControls.setVisibility(View.GONE);
 
         if (buttonNoGPS != null) {
@@ -554,7 +554,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
                 }
             }
             if (textGPSStatus != null) {
-                textGPSStatus.setText("GPS: OFF");
+                textGPSStatus.setText(R.string.gps_status_off);
                 textGPSStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorError));
             }
             if (textGPSAccuracy != null) {
@@ -589,6 +589,11 @@ public class MapFragment extends Fragment implements SensorEventListener {
     private void initMap(View view) {
         mapView = view.findViewById(R.id.mapView);
         mapView.setTileSource(TileSourceFactory.MAPNIK);
+        if ((getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+            // dark theme: dark map tiles too
+            mapView.getOverlayManager().getTilesOverlay().setColorFilter(org.osmdroid.views.overlay.TilesOverlay.INVERT_COLORS);
+        }
         mapView.setMultiTouchControls(true);
         
         RotationGestureOverlay rotationGestureOverlay = new RotationGestureOverlay(requireContext(), mapView);
@@ -685,7 +690,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
 
     public void startTracking() {
         if (!hasLocationPermission()) {
-            Toast.makeText(requireContext(), "GPS Permission required", Toast.LENGTH_LONG).show();
+            Toast.makeText(requireContext(), getString(R.string.toast_gps_perm), Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -734,7 +739,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
         }
 
         updatePathOnMap();
-        Toast.makeText(requireContext(), "Tracking started", Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), getString(R.string.toast_started), Toast.LENGTH_SHORT).show();
     }
 
     public void stopTracking() {
@@ -758,10 +763,10 @@ public class MapFragment extends Fragment implements SensorEventListener {
 
         if (deadReckoningEngine.getCurrentTrip() != null) {
             tripStorage.saveTrip(deadReckoningEngine.getCurrentTrip());
-            Toast.makeText(requireContext(), "Trip saved", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.toast_saved), Toast.LENGTH_SHORT).show();
         }
 
-        Toast.makeText(requireContext(), "Tracking stopped", Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), getString(R.string.toast_stopped), Toast.LENGTH_SHORT).show();
     }
 
     private boolean hasLocationPermission() {
@@ -781,20 +786,20 @@ public class MapFragment extends Fragment implements SensorEventListener {
         GeoPoint gpsPoint = new GeoPoint(location.getLatitude(), location.getLongitude());
         
         if (forceNoGPSMode) {
-            textGPSStatus.setText("No GPS");
+            textGPSStatus.setText(R.string.gps_status_none);
             textGPSStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorError));
             useGPSForTrace = false;
         } else if (accuracy < 15) {
-            textGPSStatus.setText("GPS: OK");
+            textGPSStatus.setText(R.string.gps_status_ok);
             textGPSStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorSuccess));
             useGPSForTrace = true;
             lastGPSMoveTime = System.currentTimeMillis();
         } else if (accuracy < 25) {
-            textGPSStatus.setText("GPS: Fair");
+            textGPSStatus.setText(R.string.gps_status_fair);
             textGPSStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorWarning));
             useGPSForTrace = accuracy < 20;
         } else {
-            textGPSStatus.setText("GPS: Low");
+            textGPSStatus.setText(R.string.gps_status_low);
             textGPSStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorWarning));
             useGPSForTrace = false;
         }
@@ -918,7 +923,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
         getActivity().runOnUiThread(() -> {
             textSteps.setText(String.valueOf(deadReckoningEngine.getStepCount()));
             if (deadReckoningEngine.hasAltitude()) {
-                textDistance.setText(String.format(Locale.US, "%.1f m  ↕%+.1f m",
+                textDistance.setText(getString(R.string.live_distance_height,
                         deadReckoningEngine.getDistance(), deadReckoningEngine.getRelativeAltitude()));
             } else {
                 textDistance.setText(String.format("%.2f m", deadReckoningEngine.getDistance()));
@@ -928,9 +933,9 @@ public class MapFragment extends Fragment implements SensorEventListener {
 
             boolean handlingPhone = deadReckoningEngine.isHandlingPhone();
             if (handlingPhone && !wasHandlingPhone) {
-                showTurnIndicator("📱 Phone moved: holding direction");
+                showTurnIndicator(getString(R.string.ind_phone_moved));
             } else if (!handlingPhone && wasHandlingPhone) {
-                showTurnIndicator("📱 Direction kept, tracking");
+                showTurnIndicator(getString(R.string.ind_phone_settled));
             }
             wasHandlingPhone = handlingPhone;
 
@@ -943,9 +948,9 @@ public class MapFragment extends Fragment implements SensorEventListener {
             if (!isManualMode && deadReckoningEngine.isTurning()) {
                 double turnAmount = deadReckoningEngine.getAccumulatedHeadingChange();
                 if (turnAmount > 0) {
-                    showTurnIndicator("Left " + String.format("%.0f°", Math.abs(turnAmount)));
+                    showTurnIndicator(getString(R.string.ind_turn_left_deg, Math.abs(turnAmount)));
                 } else {
-                    showTurnIndicator("Right " + String.format("%.0f°", Math.abs(turnAmount)));
+                    showTurnIndicator(getString(R.string.ind_turn_right_deg, Math.abs(turnAmount)));
                 }
                 
                 if (forceNoGPSMode) {

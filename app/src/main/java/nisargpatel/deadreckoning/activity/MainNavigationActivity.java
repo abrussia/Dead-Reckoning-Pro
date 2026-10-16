@@ -264,6 +264,11 @@ public class MainNavigationActivity extends AppCompatActivity implements SensorE
     private void initializeMap() {
         mapView = findViewById(R.id.mapView);
         mapView.setTileSource(TileSourceFactory.MAPNIK);
+        if ((getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+            // dark theme: dark map tiles too
+            mapView.getOverlayManager().getTilesOverlay().setColorFilter(org.osmdroid.views.overlay.TilesOverlay.INVERT_COLORS);
+        }
         mapView.setMultiTouchControls(true);
 
         IMapController mapController = mapView.getController();

@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_settings">Настройки</string>
+    <string name="threshold_steps">Шаги (порог):</string>
+    <string name="moving_average_steps">Шаги (скольз. среднее):</string>
+    <string name="android_steps">Шаги Android:</string>
+    <string name="start">Старт</string>
+    <string name="stop">Стоп</string>
+    <string name="pause">Пауза</string>
+    <string name="resume">Продолжить</string>
+    <string name="distance_traveled">Расстояние (фут.):</string>
+    <string name="title_activity_set_thresholds">Пороги</string>
+    <string name="set_upper">Верхний порог</string>
+    <string name="set_lower">Нижний порог</string>
+    <string name="set_thresholds">Задать пороги</string>
+    <string name="threshold_set">Пороги заданы.</string>
+    <string name="title_activity_calibration">Расчёт длины шага</string>
+    <string name="stride_length_set">Длина шага задана.</string>
+    <string name="set_stride_length">Задать длину шага</string>
+    <string name="enter_distance_traveled">Введите пройденное расстояние (фут.):</string>
+    <string name="okay">ОК</string>
+    <string name="step_info">Шаги</string>
+    <string name="title_step_counter">Шагомер</string>
+    <string name="clear">Очистить</string>
+    <string name="debug_tools">Отладка</string>
+    <string name="delete_user">Удалить пользователя</string>
+    <string name="nav_map">Карта</string>
+    <string name="nav_steps">Шаги</string>
+    <string name="nav_history">История</string>
+    <string name="nav_calibrate">Калибровка</string>
+    <string name="nav_guide">Справка</string>
+
+    <string name="view_on_map">На карте</string>
+    <string name="close">Закрыть</string>
+    <string name="export_csv">Экспорт CSV</string>
+    <string name="export_gpx">Экспорт GPX</string>
+    <string name="export_csv_choose_folder">Экспорт CSV (выбрать папку)</string>
+    <string name="export_gpx_choose_folder">Экспорт GPX (выбрать папку)</string>
+    <string name="export_csv_downloads">Экспорт CSV в «Загрузки»</string>
+    <string name="export_gpx_downloads">Экспорт GPX в «Загрузки»</string>
+    <string name="delete">Удалить</string>
+    <string name="delete_trip">Удалить поездку</string>
+    <string name="confirm_delete_trip">Удалить эту запись трека?</string>
+    <string name="trip_deleted">Запись удалена</string>
+    <string name="cancel">Отмена</string>
+    <string name="trip_details_format">Дата: %1$s\nДлительность: %2$s\nРасстояние: %3$.2f м\nШагов: %4$d\nПоворотов: %5$d\nСтарт: %6$.6f, %7$.6f\nФиниш: %8$.6f, %9$.6f</string>
+    <string name="trip">Трек</string>
+    <string name="exported">Экспортировано: %s</string>
+    <string name="exported_to_downloads">Сохранено в «Загрузки»: %s</string>
+    <string name="error">Ошибка: %s</string>
+    <string name="history_title">История треков</string>
+    <string name="empty_history">Запишите первый трек — он появится здесь</string>
+    <string name="total_trips">Треков</string>
+    <string name="total_distance">Всего пройдено</string>
+    <string name="total_steps">Всего шагов</string>
+    <string name="my_trips">Мои треки</string>
+    <string name="no_trip_recorded">Треков пока нет</string>
+
+    <string name="stride_length">Длина шага</string>
+    <string name="calibrated">Откалибровано</string>
+    <string name="not_calibrated">Не откалибровано</string>
+    <string name="dynamic_mode">Динамический</string>
+    <string name="android_mode">Android</string>
+    <string name="static_mode">Статический</string>
+    <string name="mode_saved">Режим «%s» сохранён</string>
+    <string name="walk_to_start">Начните идти для калибровки</string>
+    <string name="low_accuracy">Низкая точность</string>
+    <string name="reset_calibration">Сбросить калибровку</string>
+    <string name="reset_confirmation">Сбросить калибровку?</string>
+    <string name="yes">Да</string>
+    <string name="no">Нет</string>
+    <string name="save">Сохранить</string>
+    <string name="reset">Сброс</string>
+    <string name="resets_performed">Сбросов выполнено</string>
+    <string name="center">Центр</string>
+    <string name="calibration">Калибровка</string>
+    <string name="calibrate">Калибровка</string>
+    <string name="coordinates">Координаты</string>
+    <string name="calibration_reset">Калибровка сброшена</string>
+    <string name="calibration_saved">Калибровка сохранена</string>
+    <string name="step_counting_mode">Способ подсчёта шагов</string>
+    <string name="choose_step_mode">Выберите способ подсчёта шагов:</string>
+    <string name="save_mode">Сохранить</string>
+    <string name="dynamic_desc">По ускорению и скользящему среднему</string>
+    <string name="android_desc">Встроенный шагомер Android</string>
+    <string name="static_desc">По верхнему и нижнему порогу</string>
+    <string name="manual">Вручную</string>
+    <string name="known_distance_hint">Известное расстояние (м)</string>
+    <string name="num_steps_hint">Количество шагов</string>
+    <string name="manual_calibration_desc">Введите измеренное расстояние и число шагов на нём</string>
+    <string name="real_time">В реальном времени</string>
+    <string name="steps">Шаги</string>
+    <string name="distance">Расстояние</string>
+    <string name="accuracy">Точность</string>
+    <string name="heading">Курс</string>
+    <string name="waiting">Ожидание…</string>
+    <string name="dynamic_recommended">Динамический (рекомендуется)</string>
+    <string name="static_thresholds">Статический (пороги)</string>
+    <string name="step_count_label">Шагов:</string>
+    <string name="take_steps_first">Сначала пройдите несколько шагов</string>
+    <string name="stride_length_set_format">Длина шага: %s фут/шаг</string>
+
+    <string name="permissions_required">Нужны разрешения</string>
+    <string name="permission_rationale">Приложению нужны разрешения:\n\n• Геолокация — для GPS на поверхности и точки старта\n• Физическая активность — для подсчёта шагов\n• Уведомления — показывать, что идёт запись трека\n• Фоновая работа — чтобы запись не прерывалась с выключенным экраном</string>
+    <string name="grant">Разрешить</string>
+    <string name="later">Позже</string>
+    <string name="partial_functionality">Часть функций может не работать</string>
+    <string name="location_granted">Доступ к геолокации получен</string>
+    <string name="permissions_denied">Разрешения не выданы</string>
+    <string name="permission_denied_message">Без доступа к геолокации приложение работает неполноценно.\n\nОткрыть настройки?</string>
+    <string name="settings">Настройки</string>
+    <string name="continue_anyway">Продолжить</string>
+
+    <string name="searching_gps">Поиск сигнала GPS…</string>
+    <string name="gps_reset">Калибровка GPS сброшена</string>
+    <string name="center_on_me">К моему положению</string>
+    <string name="tracking_started">Запись начата</string>
+    <string name="tracking_stopped">Запись остановлена</string>
+    <string name="tracking_reset">Запись сброшена</string>
+    <string name="trip_saved">Трек сохранён</string>
+    <string name="gps_permission_required">Нужен доступ к геолокации</string>
+    <string name="mode_auto">Режим: Авто</string>
+    <string name="mode_manual">Режим: Вручную</string>
+    <string name="calibrate_gps">Калибровка GPS</string>
+    <string name="turn_detected">Поворот</string>
+    <string name="turn_left">Налево</string>
+    <string name="turn_right">Направо</string>
+    <string name="u_turn">Разворот</string>
+    <string name="open_dial">Указать азимут</string>
+    <string name="select_direction">Выберите направление</string>
+    <string name="confirm">Подтвердить</string>
+    <string name="mode_format">Режим: %s</string>
+
+    <string name="tracking_in_progress">Идёт запись</string>
+    <string name="tracking_notification_desc">Уведомление о записи трека</string>
+    <string name="tracking_status_format">%1$d шагов — %2$.2f м</string>
+
+    <string name="num_steps_label">Число шагов</string>
+    <string name="instant_acc_label">Мгновенное ускорение</string>
+
+    <string name="select_user">Выберите пользователя</string>
+    <string name="user_name_label">Имя:</string>
+    <string name="username_colon">Пользователь: </string>
+    <string name="go_to_user_settings">Открыть настройки пользователя %s?</string>
+    <string name="gyro_calibration_msg">Положите телефон на ровную поверхность и нажмите «Старт».</string>
+    <string name="start_calibration">Начать калибровку</string>
+    <string name="stop_calibration">Остановить калибровку</string>
+    <string name="calibrating">Калибровка</string>
+    <string name="please_wait">Подождите.</string>
+    <string name="mag_calibration_msg">Нажмите «Старт» и поводите телефоном восьмёркой.</string>
+    <string name="sensor_calibration_msg">Откалибруйте датчики вручную или нажмите «Авто», чтобы использовать калибровку Android.</string>
+    <string name="manual_calibrate">Вручную</string>
+    <string name="auto">Авто</string>
+    <string name="user_details_msg">Введите длину шага вручную или рассчитайте её в режиме калибровки:</string>
+    <string name="stride_length_calc">Расчёт длины шага</string>
+    <string name="invalid_name">Введите имя.</string>
+    <string name="invalid_stride">Введите корректную длину шага.</string>
+    <string name="user_settings">Настройки пользователя</string>
+    <string name="start_stop">Старт/Стоп</string>
+    <string name="duration">Длительность</string>
+    <string name="change_stride_length">Изменить длину шага</string>
+    <string name="status">Состояние</string>
+
+    <string name="permission_thanks">Спасибо!</string>
+    <string name="gps_not_available">Положение GPS недоступно</string>
+    <string name="invalid_value">Неверное значение</string>
+    <string name="stride_length_m_format">Длина шага: %s м</string>
+    <string name="gps_recalibrated">GPS перекалиброван</string>
+    <string name="gps_recalibration">Перекалибровка GPS</string>
+    <string name="advanced_info">Подробности</string>
+    <string name="advanced_info_format">Шагов: %1$d\nРасстояние: %2$.2f м\nКурс: %3$.1f°\nТочек GPS: %4$d\nМасштаб: %5$.3f</string>
+    <string name="stride_length_m">Длина шага (м)</string>
+    <string name="resets_performed_toast">Сбросов выполнено</string>
+    <string name="tracking_status_in_progress">Идёт запись…</string>
+    <string name="tracking_status_stopped">Остановлено</string>
+    <string name="mode_dynamic">Режим: динамический</string>
+    <string name="mode_manual_label">Режим: Вручную</string>
+    <string name="mode_auto_label">Режим: Авто</string>
+    <string name="gps_calibrating">GPS: калибровка…</string>
+    <string name="gps_ok">GPS: OK</string>
+    <string name="gps_low">GPS: слабый</string>
+    <string name="start_marker">Старт</string>
+    <string name="current_position">Текущее положение</string>
+    <string name="loading">Загрузка…</string>
+    <string name="info">Инфо</string>
+    <string name="static_label">Статический</string>
+
+    <string name="add_marker">Добавить метку</string>
+    <string name="clear_all">Очистить всё</string>
+    <string name="select_emoji">Выберите значок</string>
+    <string name="marker_label_hint">Подпись (необязательно)</string>
+    <string name="marker_added">Метка добавлена</string>
+    <string name="marker_deleted">Метка удалена</string>
+    <string name="clear_confirmation">Очистить</string>
+    <string name="clear_all_trips">Удалить все треки</string>
+    <string name="clear_all_markers">Удалить все метки</string>
+    <string name="clear_everything">Очистить всё</string>
+    <string name="clear_tracks_only">Только треки</string>
+    <string name="clear_markers_only">Только метки</string>
+    <string name="markers_cleared">Метки удалены</string>
+    <string name="trips_cleared">Треки удалены</string>
+    <string name="everything_cleared">Всё очищено</string>
+    <string name="tap_location">Нажмите на карту, чтобы поставить метку</string>
+
+    <string name="recording_channel">Запись трека</string>
+    <string name="recording_title">Идёт запись трека</string>
+    <string name="recording_text">Шаги и направление записываются и при выключенном экране</string>
+    <string name="ind_left">Налево ↰</string>
+    <string name="ind_right">Направо ↱</string>
+    <string name="ind_uturn">Разворот 🔄</string>
+    <string name="toast_paused">Запись на паузе</string>
+    <string name="toast_resumed">Запись продолжена</string>
+    <string name="toast_no_fix">Нет сигнала GPS: трек начнётся от центра карты</string>
+    <string name="toast_gps_mode">Режим: GPS</string>
+    <string name="toast_mode_manual">Повороты: вручную</string>
+    <string name="toast_mode_auto">Повороты: автоматически</string>
+    <string name="btn_mode_manual">Повороты: вручную</string>
+    <string name="btn_mode_auto">Повороты: авто</string>
+    <string name="btn_no_gps">Без GPS</string>
+    <string name="gps_status_calibrating">GPS: калибровка…</string>
+    <string name="gps_status_off">GPS выкл.</string>
+    <string name="gps_status_none">Без GPS</string>
+    <string name="gps_status_ok">GPS: OK</string>
+    <string name="gps_status_fair">GPS: средне</string>
+    <string name="gps_status_low">GPS: слабо</string>
+    <string name="toast_gps_perm">Нужен доступ к геолокации</string>
+    <string name="toast_started">Запись начата</string>
+    <string name="toast_saved">Трек сохранён</string>
+    <string name="toast_stopped">Запись остановлена</string>
+    <string name="toast_nogps_manual">Без GPS: повороты вручную — стрелками или циферблатом</string>
+    <string name="toast_nogps_auto">Без GPS: повороты определяются автоматически</string>
+    <string name="ind_phone_moved">📱 Телефон перекладывают: держу направление</string>
+    <string name="ind_phone_settled">📱 Направление сохранено, запись идёт</string>
+    <string name="ind_turn_left_deg">Налево %.0f°</string>
+    <string name="ind_turn_right_deg">Направо %.0f°</string>
+    <string name="profile_height" formatted="true">Высота %+.1f м</string>
+    <string name="profile_range" formatted="true">мин %+.1f   макс %+.1f</string>
+    <string name="profile_walked" formatted="true">пройдено %.0f м</string>
+    <string name="profile_axis" formatted="true">%+.0f м</string>
+    <string name="v3d_info" formatted="true">Высота %+.1f … %+.1f м   сетка %s м   высота ×%s</string>
+    <string name="v3d_hint" formatted="true">палец: вращать/наклонять · щипок: масштаб · 2 пальца: сдвиг · двойной тап: сброс</string>
+    <string name="v3d_empty" formatted="true">В этом треке нет точек</string>
+    <string name="v3d_btn_height" formatted="true">Высота ×%.0f</string>
+    <string name="v3d_btn_top" formatted="true">Сверху</string>
+    <string name="v3d_btn_side" formatted="true">Сбоку</string>
+    <string name="v3d_btn_reset" formatted="true">Сброс</string>
+    <string name="v3d_no_points" formatted="true">В этом треке нет точек</string>
+    <string name="btn_3d" formatted="true">3D</string>
+    <string name="live_distance_height" formatted="true">%.1f м  ↕%+.1f м</string>
+</resources>

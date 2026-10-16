@@ -41,13 +41,13 @@ public class Track3DActivity extends AppCompatActivity {
         int pad = dp(8);
         bar.setPadding(pad, pad, pad, dp(36));
 
-        buttonExaggeration = button("Height ×1");
+        buttonExaggeration = button(getString(nisargpatel.deadreckoning.R.string.v3d_btn_height, 1f));
         buttonExaggeration.setOnClickListener(v -> nextExaggeration());
-        MaterialButton top = button("Top");
+        MaterialButton top = button(getString(nisargpatel.deadreckoning.R.string.v3d_btn_top));
         top.setOnClickListener(v -> view3d.setTopView());
-        MaterialButton side = button("Side");
+        MaterialButton side = button(getString(nisargpatel.deadreckoning.R.string.v3d_btn_side));
         side.setOnClickListener(v -> view3d.setSideView());
-        MaterialButton reset = button("Reset");
+        MaterialButton reset = button(getString(nisargpatel.deadreckoning.R.string.v3d_btn_reset));
         reset.setOnClickListener(v -> view3d.resetView());
         bar.addView(buttonExaggeration);
         bar.addView(top);
@@ -63,7 +63,7 @@ public class Track3DActivity extends AppCompatActivity {
         String tripId = getIntent().getStringExtra("trip_id");
         Trip trip = tripId != null ? new TripStorage(this).getTrip(tripId) : null;
         if (trip == null || trip.getPathPoints() == null || trip.getPathPoints().size() < 2) {
-            Toast.makeText(this, "This trip has no track points", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, nisargpatel.deadreckoning.R.string.v3d_no_points, Toast.LENGTH_LONG).show();
         } else {
             setTitle(trip.getName() != null ? trip.getName() : "Trip 3D");
             view3d.setPoints(trip.getPathPoints());
@@ -82,7 +82,7 @@ public class Track3DActivity extends AppCompatActivity {
     }
 
     private void updateExaggerationLabel() {
-        buttonExaggeration.setText(String.format(Locale.US, "Height ×%.0f", view3d.getExaggeration()));
+        buttonExaggeration.setText(getString(nisargpatel.deadreckoning.R.string.v3d_btn_height, view3d.getExaggeration()));
     }
 
     private MaterialButton button(String text) {

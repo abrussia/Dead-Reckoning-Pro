@@ -285,7 +285,7 @@ public class Track3DView extends View {
         canvas.drawColor(Color.rgb(24, 28, 34));
         int n = px.length;
         if (n < 2) {
-            canvas.drawText("No points in this track", 16 * dp, 40 * dp, textPaint);
+            canvas.drawText(getContext().getString(nisargpatel.deadreckoning.R.string.v3d_empty), 16 * dp, 40 * dp, textPaint);
             return;
         }
         setupProjection();
@@ -355,9 +355,9 @@ public class Track3DView extends View {
 
         // info
         float ty = 24 * dp;
-        canvas.drawText(String.format(Locale.US, "Height %+.1f … %+.1f m   grid %s m   height ×%s",
+        canvas.drawText(getContext().getString(nisargpatel.deadreckoning.R.string.v3d_info,
                 minZ, maxZ, trim(step), trim(exaggeration)), 12 * dp, ty, textPaint);
-        canvas.drawText("drag: rotate/tilt · pinch: zoom · 2 fingers: move · double tap: reset",
+        canvas.drawText(getContext().getString(nisargpatel.deadreckoning.R.string.v3d_hint),
                 12 * dp, getHeight() - 12 * dp, textPaint);
     }
 

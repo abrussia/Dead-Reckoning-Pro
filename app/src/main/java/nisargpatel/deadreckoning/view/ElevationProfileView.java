@@ -48,7 +48,10 @@ public class ElevationProfileView extends View {
         super(context, attrs);
         dp = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1, getResources().getDisplayMetrics());
 
-        bgPaint.setColor(Color.argb(230, 255, 255, 255));
+        boolean night = (getResources().getConfiguration().uiMode
+                & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        bgPaint.setColor(night ? Color.argb(235, 30, 34, 39) : Color.argb(230, 255, 255, 255));
         bgPaint.setShadowLayer(3 * dp, 0, 1 * dp, Color.argb(60, 0, 0, 0));
 
         linePaint.setStyle(Paint.Style.STROKE);
@@ -60,13 +63,13 @@ public class ElevationProfileView extends View {
 
         zeroPaint.setStyle(Paint.Style.STROKE);
         zeroPaint.setStrokeWidth(1.2f * dp);
-        zeroPaint.setColor(Color.argb(160, 60, 60, 60));
+        zeroPaint.setColor(night ? Color.argb(170, 200, 200, 200) : Color.argb(160, 60, 60, 60));
         zeroPaint.setPathEffect(new DashPathEffect(new float[]{6 * dp, 4 * dp}, 0));
 
-        textPaint.setColor(Color.rgb(80, 80, 80));
+        textPaint.setColor(night ? Color.rgb(170, 178, 186) : Color.rgb(80, 80, 80));
         textPaint.setTextSize(11 * dp);
 
-        boldPaint.setColor(Color.rgb(30, 30, 30));
+        boldPaint.setColor(night ? Color.rgb(236, 239, 241) : Color.rgb(30, 30, 30));
         boldPaint.setTextSize(14 * dp);
         boldPaint.setFakeBoldText(true);
 
@@ -138,15 +141,15 @@ public class ElevationProfileView extends View {
 
         // header: current height and range
         float cur = alt[n - 1];
-        canvas.drawText(String.format(Locale.US, "Height %+.1f m", cur), rect.left + 12 * dp, rect.top + 18 * dp, boldPaint);
-        String range = String.format(Locale.US, "min %+.1f   max %+.1f", minOf(alt), maxOf(alt));
+        canvas.drawText(getContext().getString(nisargpatel.deadreckoning.R.string.profile_height, cur), rect.left + 12 * dp, rect.top + 18 * dp, boldPaint);
+        String range = getContext().getString(nisargpatel.deadreckoning.R.string.profile_range, minOf(alt), maxOf(alt));
         float rw = textPaint.measureText(range);
         canvas.drawText(range, rect.right - 12 * dp - rw, rect.top + 18 * dp, textPaint);
 
         // axis labels
-        canvas.drawText(String.format(Locale.US, "%+.0f m", hi), rect.left + 8 * dp, top + 10 * dp, textPaint);
-        canvas.drawText(String.format(Locale.US, "%+.0f m", lo), rect.left + 8 * dp, bottom, textPaint);
-        String dl = String.format(Locale.US, "%.0f m walked", dist[n - 1]);
+        canvas.drawText(getContext().getString(nisargpatel.deadreckoning.R.string.profile_axis, hi), rect.left + 8 * dp, top + 10 * dp, textPaint);
+        canvas.drawText(getContext().getString(nisargpatel.deadreckoning.R.string.profile_axis, lo), rect.left + 8 * dp, bottom, textPaint);
+        String dl = getContext().getString(nisargpatel.deadreckoning.R.string.profile_walked, dist[n - 1]);
         canvas.drawText(dl, right - textPaint.measureText(dl), rect.bottom - 4 * dp, textPaint);
 
         // start level

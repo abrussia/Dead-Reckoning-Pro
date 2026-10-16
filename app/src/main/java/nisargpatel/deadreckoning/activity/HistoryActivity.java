@@ -149,7 +149,7 @@ public class HistoryActivity extends AppCompatActivity implements TripAdapter.On
             .setTitle(trip.getName() != null ? trip.getName() : getString(R.string.trip))
             .setMessage(details)
             .setPositiveButton(R.string.view_on_map, (d, w) -> viewTripOnMap(trip))
-            .setNeutralButton("3D", (d, w) -> viewTrip3D(trip))
+            .setNeutralButton(R.string.btn_3d, (d, w) -> viewTrip3D(trip))
             .setNegativeButton(R.string.close, null)
             .show();
     }
