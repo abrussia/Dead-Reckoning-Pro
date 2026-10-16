@@ -26,53 +26,121 @@ public class TripStorage {
     private final Context context;
     private final Gson gson;
     
+    private static final String TRIPS_DIR = "trips";
+    private static final Object LOCK = new Object();
+
+    private final File tripsDir;
+
     public TripStorage(Context context) {
-        this.context = context;
+        this.context = context.getApplicationContext();
         this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         this.gson = new Gson();
+        this.tripsDir = new File(this.context.getFilesDir(), TRIPS_DIR);
+        if (!tripsDir.exists()) {
+            tripsDir.mkdirs();
+        }
+        migrateFromPreferences();
     }
-    
-    public void saveTrip(Trip trip) {
-        List<Trip> trips = getAllTrips();
-        
-        // Remove existing trip with same ID if exists
-        trips.removeIf(t -> t.getId().equals(trip.getId()));
-        
-        trips.add(trip);
-        
-        String json = gson.toJson(trips);
-        prefs.edit().putString(TRIPS_KEY, json).apply();
-    }
-    
-    public List<Trip> getAllTrips() {
-        String json = prefs.getString(TRIPS_KEY, "[]");
-        Type type = new TypeToken<ArrayList<Trip>>(){}.getType();
-        List<Trip> trips = gson.fromJson(json, type);
-        return trips != null ? trips : new ArrayList<>();
-    }
-    
-    public Trip getTrip(String id) {
-        List<Trip> trips = getAllTrips();
-        for (Trip trip : trips) {
-            if (trip.getId().equals(id)) {
-                return trip;
+
+    /**
+     * Trips used to live together in one SharedPreferences string, which gets slow and
+     * fragile with long tracks. Each trip is now its own file; old data is moved over once.
+     */
+    private void migrateFromPreferences() {
+        synchronized (LOCK) {
+            String json = prefs.getString(TRIPS_KEY, null);
+            if (json == null) return;
+            try {
+                Type type = new TypeToken<ArrayList<Trip>>(){}.getType();
+                List<Trip> old = gson.fromJson(json, type);
+                if (old != null) {
+                    for (Trip t : old) {
+                        if (t != null && t.getId() != null) writeTripFile(t);
+                    }
+                }
+                prefs.edit().remove(TRIPS_KEY).apply();
+            } catch (Exception ignored) {
+                // keep the old data untouched if anything goes wrong
             }
         }
-        return null;
     }
-    
+
+    private File fileFor(String id) {
+        return new File(tripsDir, id.replaceAll("[^A-Za-z0-9_-]", "_") + ".json");
+    }
+
+    private void writeTripFile(Trip trip) throws IOException {
+        File target = fileFor(trip.getId());
+        File tmp = new File(tripsDir, target.getName() + ".tmp");
+        try (java.io.Writer w = new java.io.OutputStreamWriter(
+                new java.io.FileOutputStream(tmp), java.nio.charset.StandardCharsets.UTF_8)) {
+            gson.toJson(trip, w);
+        }
+        if (!tmp.renameTo(target)) {
+            // renameTo may fail if the target exists on some file systems
+            target.delete();
+            if (!tmp.renameTo(target)) throw new IOException("Cannot save trip " + trip.getId());
+        }
+    }
+
+    private Trip readTripFile(File f) {
+        try (java.io.Reader r = new java.io.InputStreamReader(
+                new java.io.FileInputStream(f), java.nio.charset.StandardCharsets.UTF_8)) {
+            return gson.fromJson(r, Trip.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Saves (or overwrites) one trip. Safe to call repeatedly during tracking (autosave). */
+    public void saveTrip(Trip trip) {
+        if (trip == null || trip.getId() == null) return;
+        synchronized (LOCK) {
+            try {
+                writeTripFile(trip);
+            } catch (IOException ignored) {
+            }
+        }
+    }
+
+    public List<Trip> getAllTrips() {
+        List<Trip> trips = new ArrayList<>();
+        synchronized (LOCK) {
+            File[] files = tripsDir.listFiles((dir, name) -> name.endsWith(".json"));
+            if (files != null) {
+                for (File f : files) {
+                    Trip t = readTripFile(f);
+                    if (t != null) trips.add(t);
+                }
+            }
+        }
+        return trips;
+    }
+
+    public Trip getTrip(String id) {
+        if (id == null) return null;
+        synchronized (LOCK) {
+            File f = fileFor(id);
+            return f.exists() ? readTripFile(f) : null;
+        }
+    }
+
     public void deleteTrip(String id) {
-        List<Trip> trips = getAllTrips();
-        trips.removeIf(t -> t.getId().equals(id));
-        
-        String json = gson.toJson(trips);
-        prefs.edit().putString(TRIPS_KEY, json).apply();
+        if (id == null) return;
+        synchronized (LOCK) {
+            fileFor(id).delete();
+        }
     }
-    
+
     public void clearAllTrips() {
-        prefs.edit().remove(TRIPS_KEY).apply();
+        synchronized (LOCK) {
+            File[] files = tripsDir.listFiles();
+            if (files != null) {
+                for (File f : files) f.delete();
+            }
+        }
     }
-    
+
     public String exportToCSV(Trip trip) throws IOException {
         File exportDir = new File(context.getExternalFilesDir(null), EXPORT_FOLDER);
         if (!exportDir.exists()) {

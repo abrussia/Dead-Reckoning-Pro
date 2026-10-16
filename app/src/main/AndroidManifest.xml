@@ -140,6 +140,11 @@
         </activity>
 
         <service
+            android:name="nisargpatel.deadreckoning.service.RecordingService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+        <service
             android:name="nisargpatel.deadreckoning.service.TrackingService"
             android:enabled="true"
             android:exported="false"

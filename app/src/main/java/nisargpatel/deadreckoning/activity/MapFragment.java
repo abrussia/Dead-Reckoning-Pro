@@ -29,6 +29,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import nisargpatel.deadreckoning.service.RecordingService;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -641,7 +642,23 @@ public class MapFragment extends Fragment implements SensorEventListener {
         }
     }
 
+    private long lastPathRedraw = 0;
+
     private void updatePathOnMap() {
+        // With the screen off nothing needs drawing; with long tracks redraw at most once a second.
+        long now = android.os.SystemClock.uptimeMillis();
+        if (!isResumed() || now - lastPathRedraw < 1000) {
+            pathRedrawPending = true;
+            return;
+        }
+        lastPathRedraw = now;
+        pathRedrawPending = false;
+        redrawPathNow();
+    }
+
+    private boolean pathRedrawPending = false;
+
+    private void redrawPathNow() {
         if (!pathPoints.isEmpty()) {
             pathOverlay.setPoints(pathPoints);
         }
@@ -673,6 +690,9 @@ public class MapFragment extends Fragment implements SensorEventListener {
         }
 
         isTracking = true;
+        RecordingService.start(requireContext());
+        autosaveHandler.removeCallbacks(autosaveRunnable);
+        autosaveHandler.postDelayed(autosaveRunnable, AUTOSAVE_MS);
         isPaused = false;
         
         StepCounterPreferences.StepMode stepMode = stepPrefs.getStepMode();
@@ -719,6 +739,10 @@ public class MapFragment extends Fragment implements SensorEventListener {
 
     public void stopTracking() {
         isTracking = false;
+        autosaveHandler.removeCallbacks(autosaveRunnable);
+        if (getContext() != null) {
+            RecordingService.stop(getContext());
+        }
         isPaused = false;
         deadReckoningEngine.stop();
 
@@ -828,7 +852,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
             case Sensor.TYPE_STEP_DETECTOR:
                 if (isTracking && !isPaused && deadReckoningEngine != null) {
                     deadReckoningEngine.onHardwareStep();
-                    updateUI();
+                    updateUI(true);
                 }
                 break;
             case Sensor.TYPE_GAME_ROTATION_VECTOR:
@@ -873,8 +897,23 @@ public class MapFragment extends Fragment implements SensorEventListener {
         }
     }
 
+    // The accelerometer fires ~50 times a second; redrawing the screen that often only burns
+    // battery. Regular updates are limited to ~5 per second, steps always update at once.
+    private static final long UI_MIN_INTERVAL_MS = 200;
+    private long lastUiUpdate = 0;
+
     private void updateUI() {
+        updateUI(false);
+    }
+
+    private void updateUI(boolean force) {
         if (getActivity() == null) return;
+        long now = android.os.SystemClock.uptimeMillis();
+        if (!force && now - lastUiUpdate < UI_MIN_INTERVAL_MS) return;
+        lastUiUpdate = now;
+        if (pathRedrawPending && isResumed() && now - lastPathRedraw >= 1000) {
+            updatePathOnMap();
+        }
         
         getActivity().runOnUiThread(() -> {
             textSteps.setText(String.valueOf(deadReckoningEngine.getStepCount()));
@@ -1004,6 +1043,9 @@ public class MapFragment extends Fragment implements SensorEventListener {
     public void onResume() {
         super.onResume();
         mapView.onResume();
+        if (pathOverlay != null && noGPSPathOverlay != null) {
+            redrawPathNow(); // catch up with what was recorded while the screen was off
+        }
         registerSensors();
         if (!forceNoGPSMode) {
             startLocationUpdates();
@@ -1024,15 +1066,42 @@ public class MapFragment extends Fragment implements SensorEventListener {
     public void onPause() {
         super.onPause();
         mapView.onPause();
-        // Keep sensors registered for background tracking
-        // sensorManager.unregisterListener(this);
-        
         try {
             requireContext().unregisterReceiver(screenStateReceiver);
         } catch (Exception ignored) {}
-        
-        stopLocationUpdates();
+
+        if (!isTracking) {
+            // Not recording: release sensors and GPS so the app does not drain the battery
+            // in the background. While recording they stay on (screen off, phone in pocket).
+            if (sensorManager != null) sensorManager.unregisterListener(this);
+            stopLocationUpdates();
+        }
     }
+
+    @Override
+    public void onDestroy() {
+        if (isTracking) {
+            stopTracking(); // saves the trip and stops the recording service
+        }
+        autosaveHandler.removeCallbacks(autosaveRunnable);
+        super.onDestroy();
+    }
+
+    // Autosave of the trip being recorded, so a dead battery or a killed app loses at most ~30 s.
+    private static final long AUTOSAVE_MS = 30_000L;
+    private final android.os.Handler autosaveHandler = new android.os.Handler(Looper.getMainLooper());
+    private final Runnable autosaveRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isTracking && deadReckoningEngine != null && deadReckoningEngine.getCurrentTrip() != null
+                    && tripStorage != null) {
+                tripStorage.saveTrip(deadReckoningEngine.getCurrentTrip());
+            }
+            if (isTracking) {
+                autosaveHandler.postDelayed(this, AUTOSAVE_MS);
+            }
+        }
+    };
 
     private boolean isScreenOn = true;
     private final IntentFilter screenStateFilter = new IntentFilter();
@@ -1217,7 +1286,8 @@ public class MapFragment extends Fragment implements SensorEventListener {
     private void clearTracksOnly() {
         pathPoints.clear();
         noGPSPathPoints.clear();
-        updatePathOnMap();
+        pathOverlay.setPoints(new ArrayList<>());
+        redrawPathNow();
     }
 
     private void clearMarkersOnly() {

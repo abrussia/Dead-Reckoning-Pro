@@ -232,6 +232,7 @@ public class MainNavigationActivity extends AppCompatActivity implements SensorE
     }
 
     private void registerSensors() {
+        if (isViewMode) return; // just viewing a saved trip: no sensors needed
         if (sensorGravity != null) {
             sensorManager.registerListener(this, sensorGravity, SensorManager.SENSOR_DELAY_FASTEST);
         }
@@ -280,7 +281,7 @@ public class MainNavigationActivity extends AppCompatActivity implements SensorE
         noGPSPathOverlay.getOutlinePaint().setStrokeCap(Paint.Cap.ROUND);
         mapView.getOverlays().add(noGPSPathOverlay);
         
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+        if (!isViewMode && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             locationOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(this), mapView);
             locationOverlay.enableMyLocation();
@@ -314,6 +315,7 @@ public class MainNavigationActivity extends AppCompatActivity implements SensorE
 
     @SuppressLint("MissingPermission")
     private void startLocationUpdates() {
+        if (isViewMode) return; // just viewing a saved trip: no GPS needed
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)

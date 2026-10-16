@@ -239,4 +239,7 @@
     <string name="everything_cleared">All cleared</string>
     <string name="tap_location">Tap on the map to place marker</string>
 
+    <string name="recording_channel">Track recording</string>
+    <string name="recording_title">Recording track</string>
+    <string name="recording_text">Steps and direction are recorded, also with the screen off</string>
 </resources>
