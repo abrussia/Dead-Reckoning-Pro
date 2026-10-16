@@ -311,6 +311,10 @@ public class MapFragment extends Fragment implements SensorEventListener {
                     noGPSPathPoints.add(first);
                 }
             }
+
+            // Really stop using GPS: no location updates, no GPS dot, no map following it
+            setGpsActive(false);
+            updateDeadReckoningMarker(lastDeadReckoningPoint);
             
             if (deadReckoningEngine != null) {
                 deadReckoningEngine.setCompassFollow(!isManualMode);
@@ -331,6 +335,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
             if (deadReckoningEngine != null) {
                 deadReckoningEngine.resetToCompassHeading();
             }
+            setGpsActive(true);
             Toast.makeText(requireContext(), "Mode: GPS (Compass)", Toast.LENGTH_SHORT).show();
         }
     }
@@ -373,6 +378,12 @@ public class MapFragment extends Fragment implements SensorEventListener {
     }
 
     private void centerOnGPS() {
+        if (forceNoGPSMode) {
+            if (currentPosition != null) {
+                mapView.getController().animateTo(currentPosition);
+            }
+            return;
+        }
         if (lastKnownGPS != null) {
             IMapController mapController = mapView.getController();
             mapController.animateTo(new GeoPoint(lastKnownGPS.getLatitude(), lastKnownGPS.getLongitude()));
@@ -491,6 +502,52 @@ public class MapFragment extends Fragment implements SensorEventListener {
         }
     }
 
+    private org.osmdroid.views.overlay.Marker deadReckoningMarker;
+
+    private void setGpsActive(boolean active) {
+        if (active) {
+            startLocationUpdates();
+            if (locationOverlay != null) {
+                locationOverlay.enableMyLocation();
+                locationOverlay.enableFollowLocation();
+            }
+            if (deadReckoningMarker != null && mapView != null) {
+                mapView.getOverlays().remove(deadReckoningMarker);
+                deadReckoningMarker = null;
+            }
+        } else {
+            stopLocationUpdates();
+            if (locationOverlay != null) {
+                locationOverlay.disableFollowLocation();
+                locationOverlay.disableMyLocation();
+            }
+            if (textGPSStatus != null) {
+                textGPSStatus.setText("GPS: OFF");
+                textGPSStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorError));
+            }
+            if (textGPSAccuracy != null) {
+                textGPSAccuracy.setText("—");
+            }
+        }
+        if (mapView != null) mapView.invalidate();
+    }
+
+    private void updateDeadReckoningMarker(GeoPoint p) {
+        if (mapView == null || p == null) return;
+        if (deadReckoningMarker == null) {
+            deadReckoningMarker = new org.osmdroid.views.overlay.Marker(mapView);
+            deadReckoningMarker.setAnchor(org.osmdroid.views.overlay.Marker.ANCHOR_CENTER,
+                    org.osmdroid.views.overlay.Marker.ANCHOR_BOTTOM);
+            deadReckoningMarker.setTitle("Estimated position (no GPS)");
+            mapView.getOverlays().add(deadReckoningMarker);
+        }
+        deadReckoningMarker.setPosition(p);
+        if (!mapView.getBoundingBox().contains(p)) {
+            mapView.getController().animateTo(p);
+        }
+        mapView.invalidate();
+    }
+
     private void stopLocationUpdates() {
         if (fusedLocationClient != null && locationCallback != null) {
             fusedLocationClient.removeLocationUpdates(locationCallback);
@@ -597,7 +654,10 @@ public class MapFragment extends Fragment implements SensorEventListener {
         lastDeadReckoningDistance = 0;
         noGPSFixedHeading = 0;
         
-        forceNoGPSMode = false;
+        if (forceNoGPSMode) {
+            forceNoGPSMode = false;
+            setGpsActive(true);
+        }
         if (buttonNoGPS != null) {
             buttonNoGPS.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.transparent));
             buttonNoGPS.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary));
@@ -814,6 +874,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
                             newPoint.setAltitude(deadReckoningEngine.getRelativeAltitude());
                         }
                         noGPSPathPoints.add(newPoint);
+                        updateDeadReckoningMarker(newPoint);
                         lastDeadReckoningPoint = newPoint;
                         currentPosition = newPoint;
                         updatePathOnMap();
@@ -880,7 +941,9 @@ public class MapFragment extends Fragment implements SensorEventListener {
         super.onResume();
         mapView.onResume();
         registerSensors();
-        startLocationUpdates();
+        if (!forceNoGPSMode) {
+            startLocationUpdates();
+        }
         
         isManualMode = turnModePrefs.getTurnMode() == TurnModePreferences.TurnMode.MANUAL;
         if (deadReckoningEngine != null) {
