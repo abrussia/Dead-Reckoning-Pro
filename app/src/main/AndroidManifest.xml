@@ -107,6 +107,10 @@
             android:exported="false">
         </activity>
         <activity
+            android:name="nisargpatel.deadreckoning.activity.Track3DActivity"
+            android:label="Trip 3D"
+            android:exported="false" />
+        <activity
             android:name="nisargpatel.deadreckoning.activity.HistoryActivity"
             android:label="@string/nav_history"
             android:configChanges="orientation|keyboardHidden|screenSize"
