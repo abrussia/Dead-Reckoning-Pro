@@ -80,7 +80,7 @@ public class MainNavigationActivity extends AppCompatActivity implements SensorE
     private Button buttonPause;
     private Button buttonCalibrate;
     private Button buttonReset;
-    private Button buttonCenterMap;
+    private View buttonCenterMap;
     private ImageView imageDirectionArrow;
     private MaterialCardView cardDirection;
 
@@ -190,7 +190,7 @@ public class MainNavigationActivity extends AppCompatActivity implements SensorE
         buttonPause = findViewById(R.id.buttonPause);
         buttonCalibrate = findViewById(R.id.buttonCalibrate);
         buttonReset = findViewById(R.id.buttonReset);
-        buttonCenterMap = (Button) findViewById(R.id.buttonCenterMap);
+        buttonCenterMap = findViewById(R.id.buttonCenterMap);
         imageDirectionArrow = findViewById(R.id.imageDirectionArrow);
         cardDirection = findViewById(R.id.cardDirection);
 

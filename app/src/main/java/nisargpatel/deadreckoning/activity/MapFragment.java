@@ -289,6 +289,28 @@ public class MapFragment extends Fragment implements SensorEventListener {
             } else if (lastKnownGPS != null && currentPosition != null) {
                 lastDeadReckoningPoint = currentPosition;
             }
+
+            if (lastDeadReckoningPoint == null && mapView != null) {
+                // No GPS fix at all: start the track at the centre of the map
+                org.osmdroid.api.IGeoPoint centre = mapView.getMapCenter();
+                lastDeadReckoningPoint = new GeoPoint(centre.getLatitude(), centre.getLongitude());
+                currentPosition = lastDeadReckoningPoint;
+                Toast.makeText(requireContext(), "No GPS fix: track starts at the map centre", Toast.LENGTH_LONG).show();
+            }
+
+            if (lastDeadReckoningPoint != null) {
+                if (deadReckoningEngine != null) {
+                    deadReckoningEngine.ensureStartLocation(
+                            lastDeadReckoningPoint.getLatitude(), lastDeadReckoningPoint.getLongitude());
+                }
+                if (noGPSPathPoints.isEmpty()) {
+                    GeoPoint first = new GeoPoint(lastDeadReckoningPoint.getLatitude(), lastDeadReckoningPoint.getLongitude());
+                    if (deadReckoningEngine != null && deadReckoningEngine.hasAltitude()) {
+                        first.setAltitude(deadReckoningEngine.getRelativeAltitude());
+                    }
+                    noGPSPathPoints.add(first);
+                }
+            }
             
             if (deadReckoningEngine != null) {
                 deadReckoningEngine.setCompassFollow(!isManualMode);

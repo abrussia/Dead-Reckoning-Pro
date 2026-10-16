@@ -473,6 +473,25 @@ public class DeadReckoningEngine {
         }
     }
     
+    /** Used when tracking without any GPS fix: anchor the track at a chosen point. */
+    public void ensureStartLocation(double lat, double lon) {
+        if (startLocation != null) return;
+        Location l = new Location("manual");
+        l.setLatitude(lat);
+        l.setLongitude(lon);
+        startLocation = l;
+        lastGPSLocation = l;
+        currentX = 0;
+        currentY = 0;
+        if (currentTrip != null) {
+            GeoPoint p = new GeoPoint(lat, lon);
+            if (hasAltitude()) {
+                p.setAltitude(getRelativeAltitude());
+            }
+            currentTrip.addPoint(p);
+        }
+    }
+
     // Barometric altimeter: altitude relative to the point where tracking started.
     private static final float PRESSURE_SMOOTHING = 0.1f;
     private float filteredPressure = Float.NaN;
