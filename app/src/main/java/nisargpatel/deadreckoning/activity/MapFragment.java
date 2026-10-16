@@ -82,6 +82,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
     private Sensor sensorLinearAcceleration;
     private Sensor sensorPressure;
     private Sensor sensorRotationVector;
+    private Sensor sensorStepDetector;
     private boolean wasHandlingPhone = false;
     private nisargpatel.deadreckoning.view.AltitudeTrack altitudeTrack;
 
@@ -461,6 +462,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
         sensorLinearAcceleration = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
         sensorPressure = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
         sensorRotationVector = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+        sensorStepDetector = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
     }
 
     private void registerSensors() {
@@ -469,6 +471,9 @@ public class MapFragment extends Fragment implements SensorEventListener {
         }
         if (sensorRotationVector != null) {
             sensorManager.registerListener(this, sensorRotationVector, SensorManager.SENSOR_DELAY_GAME);
+        }
+        if (sensorStepDetector != null) {
+            sensorManager.registerListener(this, sensorStepDetector, SensorManager.SENSOR_DELAY_FASTEST);
         }
         if (sensorGravity != null) {
             sensorManager.registerListener(this, sensorGravity, SensorManager.SENSOR_DELAY_GAME);
@@ -518,6 +523,9 @@ public class MapFragment extends Fragment implements SensorEventListener {
         if (active) {
             startLocationUpdates();
             if (locationOverlay != null) {
+                if (mapView != null && !mapView.getOverlays().contains(locationOverlay)) {
+                    mapView.getOverlays().add(locationOverlay);
+                }
                 locationOverlay.enableMyLocation();
                 locationOverlay.enableFollowLocation();
             }
@@ -530,6 +538,9 @@ public class MapFragment extends Fragment implements SensorEventListener {
             if (locationOverlay != null) {
                 locationOverlay.disableFollowLocation();
                 locationOverlay.disableMyLocation();
+                if (mapView != null) {
+                    mapView.getOverlays().remove(locationOverlay);
+                }
             }
             if (textGPSStatus != null) {
                 textGPSStatus.setText("GPS: OFF");
@@ -724,6 +735,7 @@ public class MapFragment extends Fragment implements SensorEventListener {
 
     private void handleGPSUpdate(Location location) {
         if (isPaused) return;
+        if (forceNoGPSMode) return; // No GPS mode: ignore any stray location update completely
         
         lastKnownGPS = location;
         
@@ -801,6 +813,12 @@ public class MapFragment extends Fragment implements SensorEventListener {
         float[] values = event.values.clone();
 
         switch (event.sensor.getType()) {
+            case Sensor.TYPE_STEP_DETECTOR:
+                if (isTracking && !isPaused && deadReckoningEngine != null) {
+                    deadReckoningEngine.onHardwareStep();
+                    updateUI();
+                }
+                break;
             case Sensor.TYPE_ROTATION_VECTOR:
                 if (deadReckoningEngine != null) {
                     deadReckoningEngine.updateRotationVector(values, event.timestamp);

@@ -68,6 +68,8 @@ public class DeadReckoningEngine {
         turnEvents.clear();
         useManualHeading = false;
         headingOffset = 0;
+        hardwareSteps = false;
+        hardwareStepCount = 0;
         referencePressure = filteredPressure; // altitude 0 = where tracking started
         
         currentX = 0;
@@ -163,7 +165,7 @@ public class DeadReckoningEngine {
                     break;
             }
             
-            if (detected && !isHandlingPhone()) {
+            if (detected && !hardwareSteps && !isHandlingPhone()) {
                 updatePosition();
                 stepsSinceLastTurn++;
             }
@@ -316,6 +318,9 @@ public class DeadReckoningEngine {
     }
     
     public int getStepCount() {
+        if (hardwareSteps) {
+            return hardwareStepCount;
+        }
         switch (stepMode) {
             case DYNAMIC:
                 return stepCounter.getStepCount();
@@ -477,6 +482,20 @@ public class DeadReckoningEngine {
         }
     }
     
+    // Android's own step detector (TYPE_STEP_DETECTOR): reliable in hand and in a pocket.
+    // Once it reports a step, it replaces the accelerometer-based detection.
+    private boolean hardwareSteps = false;
+    private int hardwareStepCount = 0;
+
+    public void onHardwareStep() {
+        if (!isRunning) return;
+        hardwareSteps = true;
+        hardwareStepCount++;
+        if (isHandlingPhone()) return;
+        updatePosition();
+        stepsSinceLastTurn++;
+    }
+
     // Fused orientation (TYPE_ROTATION_VECTOR) with carry-position change handling.
     private final OrientationTracker orientationTracker = new OrientationTracker();
     private boolean useOrientationTracker = false;
