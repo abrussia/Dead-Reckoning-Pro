@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,10 +29,32 @@ jobs:
           curl -fL -o app/libs/achartengine-1.1.0.jar \
             https://raw.githubusercontent.com/nisargnp/DeadReckoning/master/app/src/libs/achartengine-1.1.0.jar
 
+      - name: Apply patches
+        run: |
+          for p in patches/*.patch; do
+            [ -f "$p" ] || continue
+            echo "Applying $p"
+            git apply --unidiff-zero --ignore-whitespace -v "$p" || { echo "::error::Patch failed: $p"; exit 1; }
+          done
+
       - name: Build
-        run: gradle --no-daemon assembleDebug
+        run: |
+          set -o pipefail
+          gradle --no-daemon assembleDebug 2>&1 | tee build.log || {
+            grep -E "error:|What went wrong" -A2 build.log | head -30 | sed 's/^/::error::/'
+            exit 1
+          }
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk DeadReckoningPro.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: DeadReckoningPro-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: DeadReckoningPro.apk
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Build ${{ github.run_number }}
+          files: DeadReckoningPro.apk
