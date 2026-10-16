@@ -23,8 +23,8 @@ jobs:
       - name: Download AChartEngine
         run: |
           mkdir -p app/libs
-          curl -fL -o app/libs/achartengine-1.2.0.jar \
-            https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/achartengine/achartengine-1.2.0.jar
+          curl -fL -o app/libs/achartengine-1.1.0.jar \
+            https://raw.githubusercontent.com/nisargnp/DeadReckoning/master/app/src/libs/achartengine-1.1.0.jar
 
       - name: Build
         run: gradle --no-daemon assembleDebug
