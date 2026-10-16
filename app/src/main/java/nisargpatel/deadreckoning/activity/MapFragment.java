@@ -81,6 +81,8 @@ public class MapFragment extends Fragment implements SensorEventListener {
     private Sensor sensorGyroscope;
     private Sensor sensorLinearAcceleration;
     private Sensor sensorPressure;
+    private Sensor sensorRotationVector;
+    private boolean wasHandlingPhone = false;
     private nisargpatel.deadreckoning.view.AltitudeTrack altitudeTrack;
 
     private DeadReckoningEngine deadReckoningEngine;
@@ -267,6 +269,10 @@ public class MapFragment extends Fragment implements SensorEventListener {
             buttonPause.setIconResource(R.drawable.ic_play);
             Toast.makeText(requireContext(), "Tracking paused", Toast.LENGTH_SHORT).show();
         } else {
+            // The phone may have been moved while paused: keep the walking direction from before.
+            if (deadReckoningEngine != null) {
+                deadReckoningEngine.holdHeadingAcrossReposition();
+            }
             buttonPause.setText(R.string.pause);
             buttonPause.setIconResource(R.drawable.ic_pause);
             Toast.makeText(requireContext(), "Tracking resumed", Toast.LENGTH_SHORT).show();
@@ -454,11 +460,15 @@ public class MapFragment extends Fragment implements SensorEventListener {
         sensorGyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         sensorLinearAcceleration = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
         sensorPressure = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
+        sensorRotationVector = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
     }
 
     private void registerSensors() {
         if (sensorPressure != null) {
             sensorManager.registerListener(this, sensorPressure, SensorManager.SENSOR_DELAY_UI);
+        }
+        if (sensorRotationVector != null) {
+            sensorManager.registerListener(this, sensorRotationVector, SensorManager.SENSOR_DELAY_GAME);
         }
         if (sensorGravity != null) {
             sensorManager.registerListener(this, sensorGravity, SensorManager.SENSOR_DELAY_GAME);
@@ -791,6 +801,11 @@ public class MapFragment extends Fragment implements SensorEventListener {
         float[] values = event.values.clone();
 
         switch (event.sensor.getType()) {
+            case Sensor.TYPE_ROTATION_VECTOR:
+                if (deadReckoningEngine != null) {
+                    deadReckoningEngine.updateRotationVector(values, event.timestamp);
+                }
+                break;
             case Sensor.TYPE_PRESSURE:
                 if (deadReckoningEngine != null) {
                     deadReckoningEngine.updatePressure(values[0]);
@@ -830,6 +845,14 @@ public class MapFragment extends Fragment implements SensorEventListener {
             }
             double heading = deadReckoningEngine.getHeading();
             textHeading.setText(String.format("%.1f°", heading));
+
+            boolean handlingPhone = deadReckoningEngine.isHandlingPhone();
+            if (handlingPhone && !wasHandlingPhone) {
+                showTurnIndicator("📱 Phone moved: holding direction");
+            } else if (!handlingPhone && wasHandlingPhone) {
+                showTurnIndicator("📱 Direction kept, tracking");
+            }
+            wasHandlingPhone = handlingPhone;
 
             if (imageDirectionArrow != null && cardDirection != null && isTracking) {
                 float rotation = (float) -heading;

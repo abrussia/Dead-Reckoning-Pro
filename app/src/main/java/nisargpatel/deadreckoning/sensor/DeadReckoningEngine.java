@@ -129,10 +129,13 @@ public class DeadReckoningEngine {
             headingEstimator.updateGyroscope(gyro, timestamp);
         }
         
-        if (gravity != null && magnetic != null) {
+        if (!useOrientationTracker && gravity != null && magnetic != null) {
             previousHeading = currentHeading;
             if (!useManualHeading) {
-                currentHeading = normalize360(headingEstimator.getHeadingDegrees() + headingOffset);
+                double base = useOrientationTracker
+                        ? orientationTracker.getHeading()
+                        : headingEstimator.getHeadingDegrees();
+                currentHeading = normalize360(base + headingOffset);
             }
             detectTurn();
         }
@@ -160,7 +163,7 @@ public class DeadReckoningEngine {
                     break;
             }
             
-            if (detected) {
+            if (detected && !isHandlingPhone()) {
                 updatePosition();
                 stepsSinceLastTurn++;
             }
@@ -169,6 +172,7 @@ public class DeadReckoningEngine {
     
     public void addAndroidStep() {
         if (!isRunning) return;
+        if (isHandlingPhone()) return;
         
         androidStepCount++;
         
@@ -473,6 +477,36 @@ public class DeadReckoningEngine {
         }
     }
     
+    // Fused orientation (TYPE_ROTATION_VECTOR) with carry-position change handling.
+    private final OrientationTracker orientationTracker = new OrientationTracker();
+    private boolean useOrientationTracker = false;
+
+    /** Feed TYPE_ROTATION_VECTOR samples. Once data arrives it replaces the old estimator. */
+    public void updateRotationVector(float[] values, long timestamp) {
+        orientationTracker.update(values, timestamp);
+        useOrientationTracker = orientationTracker.hasData();
+        if (isRunning && !useManualHeading) {
+            previousHeading = currentHeading;
+            currentHeading = normalize360(orientationTracker.getHeading() + headingOffset);
+            detectTurn();
+        }
+    }
+
+    /** True while the phone is being moved to a new carry position (steps are ignored). */
+    public boolean isHandlingPhone() {
+        return useOrientationTracker && orientationTracker.isHandling();
+    }
+
+    /**
+     * Keep the current walking direction after the phone has been moved
+     * (e.g. when tracking resumes after a pause).
+     */
+    public void holdHeadingAcrossReposition() {
+        if (useOrientationTracker) {
+            orientationTracker.requestReanchor(normalize360(currentHeading - headingOffset));
+        }
+    }
+
     /** Used when tracking without any GPS fix: anchor the track at a chosen point. */
     public void ensureStartLocation(double lat, double lon) {
         if (startLocation != null) return;
